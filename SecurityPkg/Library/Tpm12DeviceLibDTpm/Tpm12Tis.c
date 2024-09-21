@@ -24,6 +24,7 @@ typedef enum {
   PtpInterfaceTis,
   PtpInterfaceFifo,
   PtpInterfaceCrb,
+  PtpInterfaceVirtio,
   PtpInterfaceMax,
 } PTP_INTERFACE_TYPE;
 
@@ -65,7 +66,8 @@ Tpm12GetPtpInterface (
 {
   PTP_CRB_INTERFACE_IDENTIFIER   InterfaceId;
   PTP_FIFO_INTERFACE_CAPABILITY  InterfaceCapability;
-
+  
+  DEBUG((EFI_D_INFO, "Tpm12GetPtpInterface!\n"));
   if (!Tpm12TisPcPresenceCheck (Register)) {
     return PtpInterfaceMax;
   }
@@ -93,6 +95,10 @@ Tpm12GetPtpInterface (
 
   if (InterfaceId.Bits.InterfaceType == PTP_INTERFACE_IDENTIFIER_INTERFACE_TYPE_TIS) {
     return PtpInterfaceTis;
+  }
+
+  if (InterfaceId.Bits.InterfaceType == PTP_INTERFACE_IDENTIFIER_INTERFACE_TYPE_VIRTIO) {
+    return PtpInterfaceVirtio;
   }
 
   return PtpInterfaceMax;
@@ -458,7 +464,7 @@ Tpm12SubmitCommand (
   )
 {
   PTP_INTERFACE_TYPE  PtpInterface;
-
+  DEBUG ((EFI_D_INFO, "[Tpm12SubmitCommand]\n" )); // Yes!
   //
   // Special handle for TPM1.2 to check PTP too, because PTP/TIS share same register address.
   //
@@ -568,7 +574,10 @@ Tpm12RequestUseTpm (
       return Tpm12PtpCrbRequestUseTpm ((PTP_CRB_REGISTERS_PTR)(UINTN)PcdGet64 (PcdTpmBaseAddress));
     case PtpInterfaceFifo:
     case PtpInterfaceTis:
-      return Tpm12TisPcRequestUseTpm ((TIS_PC_REGISTERS_PTR)(UINTN)PcdGet64 (PcdTpmBaseAddress));
+      return Tpm12TisPcRequestUseTpm((TIS_PC_REGISTERS_PTR)(UINTN)PcdGet64(PcdTpmBaseAddress));
+    // TIS/CRB 都是向某处偏移写一个字节。
+    // case PtpInterfaceVirtio:
+    //   return Tpm12VirtioRequestUseTpm((TIS_PC_REGISTERS_PTR)(UINTN)PcdGet64(PcdTpmBaseAddress));
     default:
       return EFI_NOT_FOUND;
   }

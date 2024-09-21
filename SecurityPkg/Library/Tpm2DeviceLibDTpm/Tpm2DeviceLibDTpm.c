@@ -91,7 +91,8 @@ Tpm2RequestUseTpm (
   VOID
   )
 {
-  return DTpm2RequestUseTpm ();
+  DEBUG ((EFI_D_INFO, "[Tpm2RequestUseTpm]: HHHHHHHHHHHHHHHHH\n" ));
+  return DTpm2RequestUseTpm();
 }
 
 /**

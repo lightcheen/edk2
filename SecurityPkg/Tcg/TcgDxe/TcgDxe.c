@@ -1392,7 +1392,7 @@ DriverEntry (
     DEBUG ((DEBUG_ERROR, "TPM error!\n"));
     return EFI_DEVICE_ERROR;
   }
-
+  DEBUG ((EFI_D_INFO, "Tpm12RequestUseTpm: 4\n" ));
   Status = Tpm12RequestUseTpm ();
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "TPM not detected!\n"));

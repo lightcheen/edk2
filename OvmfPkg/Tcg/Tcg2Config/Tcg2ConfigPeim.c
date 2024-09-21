@@ -50,7 +50,7 @@ Tcg2ConfigPeimEntryPoint (
   EFI_STATUS  Status;
 
   DEBUG ((DEBUG_INFO, "%a\n", __func__));
-
+  DEBUG ((EFI_D_INFO, "[Tcg2ConfigPeimEntryPoint]\n" ));
   Status = InternalTpm12Detect ();
   if (!EFI_ERROR (Status)) {
     DEBUG ((DEBUG_INFO, "%a: TPM1.2 detected\n", __func__));

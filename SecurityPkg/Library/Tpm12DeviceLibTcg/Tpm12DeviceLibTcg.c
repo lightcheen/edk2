@@ -40,7 +40,7 @@ Tpm12SubmitCommand (
 {
   EFI_STATUS           Status;
   TPM_RSP_COMMAND_HDR  *Header;
-
+  // DEBUG ((EFI_D_INFO, "Tpm12SubmitCommand: 2\n" ));
   if (mTcgProtocol == NULL) {
     Status = gBS->LocateProtocol (&gEfiTcgProtocolGuid, NULL, (VOID **)&mTcgProtocol);
     if (EFI_ERROR (Status)) {

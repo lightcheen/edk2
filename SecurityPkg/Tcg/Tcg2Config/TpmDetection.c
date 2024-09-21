@@ -75,7 +75,7 @@ DetectTpmDevice (
   // dTPM available and not disabled by setup
   // We need check if it is TPM1.2 or TPM2.0
   // So try TPM1.2 command at first
-
+  DEBUG ((EFI_D_INFO, "Tpm12RequestUseTpm: 2\n" ));
   Status = Tpm12RequestUseTpm ();
   if (EFI_ERROR (Status)) {
     //

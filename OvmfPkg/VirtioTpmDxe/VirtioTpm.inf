@@ -1,0 +1,40 @@
+## @file
+# This driver produces EFI_TPM_PROTOCOL instances for virtio-tpm devices.
+#
+# Copyright (C) 2016, Linaro Ltd.
+#
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = VirtioTpmDxe
+  FILE_GUID                      = 9e0f776a-728f-11ef-ba7a-00163e35bdd2
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = VirtioTpmEntryPoint
+
+[Sources]
+  VirtioTpm.c
+  VirtioTpm.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  OvmfPkg/OvmfPkg.dec
+
+[LibraryClasses]
+  BaseMemoryLib
+  DebugLib
+  MemoryAllocationLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+  VirtioLib
+
+[Protocols]
+  gEfiTpmProtocolGuid              ## BY_START
+  gVirtioDeviceProtocolGuid        ## TO_START
+
+[Guids]
+  gEfiTpmAlgorithmRaw

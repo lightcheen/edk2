@@ -36,7 +36,7 @@ TcgConfigDriverEntryPoint (
     DEBUG ((DEBUG_ERROR, "No TPM12 instance required!\n"));
     return EFI_UNSUPPORTED;
   }
-
+  // DEBUG ((EFI_D_INFO, "Tpm12RequestUseTpm: 3\n" ));
   Status = Tpm12RequestUseTpm ();
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "TPM not detected!\n"));

@@ -22,6 +22,10 @@
 // <https://github.com/oasis-tcs/virtio-spec/tree/87fa6b5d8155>.
 //
 #define VIRTIO_SUBSYSTEM_FILESYSTEM  26
+//
+// New !Subsystem Device IDs
+#define VIRTIO_SUBSYSTEM_TRUSTED_PLATFORM_MODULE  27
+
 
 //
 // Structures for parsing the VirtIo 1.0 specific PCI capabilities from the

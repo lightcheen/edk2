@@ -794,7 +794,7 @@ PeimEntryMP (
              (VOID **)&mMeasurementExcludedFvPpi
              );
   // Do not check status, because it is optional
-
+  DEBUG ((EFI_D_INFO, "Tpm12RequestUseTpm: 5\n" ));
   Status = Tpm12RequestUseTpm ();
   if (EFI_ERROR (Status)) {
     return Status;
@@ -876,7 +876,8 @@ PeimEntryMA (
   }
 
   if (!mImageInMemory) {
-    Status = Tpm12RequestUseTpm ();
+    DEBUG ((EFI_D_INFO, "Tpm12RequestUseTpm: 6\n" ));
+    Status = Tpm12RequestUseTpm();
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, "TPM not detected!\n"));
       goto Done;

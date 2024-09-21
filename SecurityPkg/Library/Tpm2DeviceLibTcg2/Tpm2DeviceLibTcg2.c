@@ -39,7 +39,7 @@ Tpm2SubmitCommand (
 {
   EFI_STATUS            Status;
   TPM2_RESPONSE_HEADER  *Header;
-
+  DEBUG ((EFI_D_INFO, "[Tpm2SubmitCommand]\n" ));
   if (mTcg2Protocol == NULL) {
     Status = gBS->LocateProtocol (&gEfiTcg2ProtocolGuid, NULL, (VOID **)&mTcg2Protocol);
     if (EFI_ERROR (Status)) {
@@ -85,7 +85,7 @@ Tpm2RequestUseTpm (
   )
 {
   EFI_STATUS  Status;
-
+  // [Verified] Not Here!
   if (mTcg2Protocol == NULL) {
     Status = gBS->LocateProtocol (&gEfiTcg2ProtocolGuid, NULL, (VOID **)&mTcg2Protocol);
     if (EFI_ERROR (Status)) {

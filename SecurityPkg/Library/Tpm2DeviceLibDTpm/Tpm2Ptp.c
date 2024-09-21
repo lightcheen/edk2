@@ -121,6 +121,7 @@ PtpCrbRequestUseTpm (
   }
 
   MmioWrite32 ((UINTN)&CrbReg->LocalityControl, PTP_CRB_LOCALITY_CONTROL_REQUEST_ACCESS);
+  
   Status = PtpCrbWaitRegisterBits (
              &CrbReg->LocalityStatus,
              PTP_CRB_LOCALITY_STATUS_GRANTED,
@@ -425,6 +426,41 @@ TisPcRequestUseTpm (
   );
 
 /**
+  Send a command to TPM for execution and return response data.
+
+  @param[in]      BufferIn      Buffer for command data.
+  @param[in]      SizeIn        Size of command data.
+  @param[in, out] BufferOut     Buffer for response data.
+  @param[in, out] SizeOut       Size of response data.
+
+  @retval EFI_SUCCESS           Operation completed successfully.
+  @retval EFI_BUFFER_TOO_SMALL  Response data buffer is too small.
+  @retval EFI_DEVICE_ERROR      Unexpected device behavior.
+  @retval EFI_UNSUPPORTED       Unsupported TPM version
+**/
+
+EFI_STATUS
+VirtioTpmCommand(
+  IN     UINT8                  *BufferIn,
+  IN     UINT32                 SizeIn,
+  IN OUT UINT8                  *BufferOut,
+  IN OUT UINT32                 *SizeOut
+  )
+{
+
+  Status = gBS->LocateProtocol(
+      &gEfiVirtioTpmProtocolGuid,
+      NULL,
+      (VOID **)&VirtioTpmProtocol
+  );
+// 然后再利用上面找到对应的 TPM device，再进行对应的 virtqueue。
+
+}
+
+
+
+
+/**
   Return PTP interface type.
 
   @param[in] Register                Pointer to PTP register.
@@ -596,7 +632,7 @@ DTpm2SubmitCommand (
   )
 {
   TPM2_PTP_INTERFACE_TYPE  PtpInterface;
-
+  DEBUG ((EFI_D_INFO, "DTpm2SubmitCommand: 1\n" ));
   PtpInterface = GetCachedPtpInterface ();
   switch (PtpInterface) {
     case Tpm2PtpInterfaceCrb:
@@ -616,6 +652,16 @@ DTpm2SubmitCommand (
                OutputParameterBlock,
                OutputParameterBlockSize
                );
+    // PEI 阶段会使用该接口。
+    // DXE 阶段会将命令提交直接换掉。           
+    // case Tpm2PtpInterfaceTis:
+    //   return Tpm2TisTpmCommand (
+    //            (TIS_PC_REGISTERS_PTR)(UINTN)PcdGet64 (PcdTpmBaseAddress),
+    //            InputParameterBlock,
+    //            InputParameterBlockSize,
+    //            OutputParameterBlock,
+    //            OutputParameterBlockSize
+    //            );
     default:
       return EFI_NOT_FOUND;
   }

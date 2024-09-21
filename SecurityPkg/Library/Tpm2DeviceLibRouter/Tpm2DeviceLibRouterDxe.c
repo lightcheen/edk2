@@ -40,7 +40,7 @@ Tpm2SubmitCommand (
   if (mInternalTpm2DeviceInterface.Tpm2SubmitCommand == NULL) {
     return EFI_UNSUPPORTED;
   }
-
+  DEBUG ((EFI_D_INFO, "[Tpm2DeviceLibRouterDxe-Tpm2SubmitCommand]\n" ));
   return mInternalTpm2DeviceInterface.Tpm2SubmitCommand (
                                         InputParameterBlockSize,
                                         InputParameterBlock,
@@ -62,6 +62,7 @@ Tpm2RequestUseTpm (
   VOID
   )
 {
+  DEBUG ((EFI_D_INFO, "[Tpm2RequestUseTpm]: HHHHHHHHHHHHHHHHH1\n" ));
   if (mInternalTpm2DeviceInterface.Tpm2RequestUseTpm == NULL) {
     return EFI_UNSUPPORTED;
   }

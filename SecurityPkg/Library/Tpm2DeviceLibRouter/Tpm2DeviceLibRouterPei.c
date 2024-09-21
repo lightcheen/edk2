@@ -89,7 +89,7 @@ Tpm2RequestUseTpm (
   )
 {
   TPM2_DEVICE_INTERFACE  *Tpm2DeviceInterface;
-
+  // [Verified] Not Here!
   Tpm2DeviceInterface = InternalGetTpm2DeviceInterface ();
   if (Tpm2DeviceInterface == NULL) {
     return EFI_UNSUPPORTED;
