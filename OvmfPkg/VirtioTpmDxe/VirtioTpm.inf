@@ -22,6 +22,7 @@
 [Packages]
   MdePkg/MdePkg.dec
   OvmfPkg/OvmfPkg.dec
+  SecurityPkg/SecurityPkg.dec
 
 [LibraryClasses]
   BaseMemoryLib
@@ -33,8 +34,8 @@
   VirtioLib
 
 [Protocols]
-  gEfiTpmProtocolGuid              ## BY_START
+  gEfiTcg2ProtocolGuid             ## BY_START
   gVirtioDeviceProtocolGuid        ## TO_START
 
-[Guids]
-  gEfiTpmAlgorithmRaw
+[Pcd]
+  gEfiSecurityPkgTokenSpaceGuid.PcdTpmBaseAddress            ## CONSUMES

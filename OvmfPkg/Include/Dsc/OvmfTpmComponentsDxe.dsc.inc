@@ -25,4 +25,5 @@
     <LibraryClasses>
       TpmPlatformHierarchyLib|SecurityPkg/Library/PeiDxeTpmPlatformHierarchyLib/PeiDxeTpmPlatformHierarchyLib.inf
   }
+  OvmfPkg/VirtioTpmDxe/VirtioTpm.inf
 !endif

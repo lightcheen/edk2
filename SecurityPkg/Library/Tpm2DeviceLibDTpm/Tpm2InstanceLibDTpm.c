@@ -80,7 +80,7 @@ Tpm2InstanceLibDTpmConstructor (
   )
 {
   EFI_STATUS  Status;
-
+  DEBUG ((EFI_D_INFO, "[Tpm2InstanceLibDTpmConstructor]\n" ));
   Status = Tpm2RegisterTpm2DeviceLib (&mDTpm2InternalTpm2Device);
   if ((Status == EFI_SUCCESS) || (Status == EFI_UNSUPPORTED)) {
     //

@@ -62,7 +62,7 @@ class Command_efi(gdb.Command):
     -64 - use X64 architecture (default is IA32)
     """
 
-    LOG_FILE = 'debug.log'
+    LOG_FILE = 'debugback.log'
     A_PATTERN = r'Loading [^ ]+ at (0x[0-9A-F]{8,}) [^ ]+ ([^ ]+)\.efi'
 
     def __init__(self):

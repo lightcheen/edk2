@@ -52,7 +52,7 @@ InternalTpm2DeviceLibDTpmCommonConstructor (
 {
   mActiveTpmInterfaceType = 0xFF;
   mCRBIdleByPass          = 0xFF;
-
+  DEBUG ((0x00000040, "InternalTpm2DeviceLibDTpmCommonConstructor: 2\n" ));
   //
   // Always cache current active TpmInterfaceType for StandaloneMm implementation
   //

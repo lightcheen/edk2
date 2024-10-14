@@ -40,8 +40,8 @@ Tpm2SubmitCommand (
   if (mInternalTpm2DeviceInterface.Tpm2SubmitCommand == NULL) {
     return EFI_UNSUPPORTED;
   }
-  DEBUG ((EFI_D_INFO, "[Tpm2DeviceLibRouterDxe-Tpm2SubmitCommand]\n" ));
-  return mInternalTpm2DeviceInterface.Tpm2SubmitCommand (
+  DEBUG((EFI_D_INFO, "[Tpm2DeviceLibRouterDxe-Tpm2SubmitCommand]\n"));
+  return mInternalTpm2DeviceInterface.Tpm2SubmitCommand(
                                         InputParameterBlockSize,
                                         InputParameterBlock,
                                         OutputParameterBlockSize,
@@ -85,6 +85,7 @@ Tpm2RegisterTpm2DeviceLib (
   IN TPM2_DEVICE_INTERFACE  *Tpm2Device
   )
 {
+  DEBUG ((EFI_D_INFO, "Tpm2DeviceLibRouterDxe-Tpm2RegisterTpm2DeviceLib\n" ));
   if (!CompareGuid (PcdGetPtr (PcdTpmInstanceGuid), &Tpm2Device->ProviderGuid)) {
     DEBUG ((DEBUG_WARN, "WARNING: Tpm2RegisterTpm2DeviceLib - does not support %g registration\n", &Tpm2Device->ProviderGuid));
     return EFI_UNSUPPORTED;

@@ -9,6 +9,11 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 #include <Library/Tpm2DeviceLib.h>
 #include <Library/PcdLib.h>
+#include <Library/DebugLib.h>
+#include <Library/IoLib.h>
+
+
+#include <IndustryStandard/TpmPtp.h>
 
 #include "Tpm2DeviceLibDTpm.h"
 
@@ -35,7 +40,19 @@ GetCachedPtpInterface (
   VOID
   )
 {
-  return PcdGet8 (PcdActiveTpmInterfaceType);
+  // Hit!
+  // reserved bit，设置为对应的值
+  DEBUG((0x00000040, "[GetCachedPtpInterface]\n"));
+  if (PcdGet8(PcdActiveTpmInterfaceType) == Tpm2PtpInterfaceCrb) {
+    PTP_CRB_REGISTERS_PTR CrbReg = (PTP_CRB_REGISTERS_PTR)(UINTN)PcdGet64(PcdTpmBaseAddress);
+    DEBUG((0x00000040, "[GetCachedPtpInterface] %d\n", MmioRead8((UINTN)&CrbReg->Reserved1[0])));
+    if (MmioRead8((UINTN)&CrbReg->Reserved1[0]) == 1) {
+      DEBUG((0x00000040, "[GetCachedPtpInterface]\n"));
+      return 3; // Tpm2PtpInterfaceVirtio
+    }
+  }
+
+  return PcdGet8(PcdActiveTpmInterfaceType);
 }
 
 /**

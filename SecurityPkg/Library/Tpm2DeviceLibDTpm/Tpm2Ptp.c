@@ -409,6 +409,15 @@ Tpm2TisTpmCommand (
   IN OUT UINT32                *SizeOut
   );
 
+EFI_STATUS
+Tpm2VirtioTpmCommand(
+  IN     PTP_CRB_REGISTERS_PTR  TisReg,
+  IN     UINT8                 *BufferIn,
+  IN     UINT32                SizeIn,
+  IN OUT UINT8                 *BufferOut,
+  IN OUT UINT32                *SizeOut
+);
+
 /**
   Get the control of TPM chip by sending requestUse command TIS_PC_ACC_RQUUSE
   to ACCESS Register in the time of default TIS_TIMEOUT_A.
@@ -424,41 +433,6 @@ EFI_STATUS
 TisPcRequestUseTpm (
   IN     TIS_PC_REGISTERS_PTR  TisReg
   );
-
-/**
-  Send a command to TPM for execution and return response data.
-
-  @param[in]      BufferIn      Buffer for command data.
-  @param[in]      SizeIn        Size of command data.
-  @param[in, out] BufferOut     Buffer for response data.
-  @param[in, out] SizeOut       Size of response data.
-
-  @retval EFI_SUCCESS           Operation completed successfully.
-  @retval EFI_BUFFER_TOO_SMALL  Response data buffer is too small.
-  @retval EFI_DEVICE_ERROR      Unexpected device behavior.
-  @retval EFI_UNSUPPORTED       Unsupported TPM version
-**/
-
-EFI_STATUS
-VirtioTpmCommand(
-  IN     UINT8                  *BufferIn,
-  IN     UINT32                 SizeIn,
-  IN OUT UINT8                  *BufferOut,
-  IN OUT UINT32                 *SizeOut
-  )
-{
-
-  Status = gBS->LocateProtocol(
-      &gEfiVirtioTpmProtocolGuid,
-      NULL,
-      (VOID **)&VirtioTpmProtocol
-  );
-// 然后再利用上面找到对应的 TPM device，再进行对应的 virtqueue。
-
-}
-
-
-
 
 /**
   Return PTP interface type.
@@ -632,8 +606,8 @@ DTpm2SubmitCommand (
   )
 {
   TPM2_PTP_INTERFACE_TYPE  PtpInterface;
-  DEBUG ((EFI_D_INFO, "DTpm2SubmitCommand: 1\n" ));
-  PtpInterface = GetCachedPtpInterface ();
+  PtpInterface = GetCachedPtpInterface();
+  DEBUG ((EFI_D_INFO, "[DTpm2SubmitCommand]: %d\n", PtpInterface));
   switch (PtpInterface) {
     case Tpm2PtpInterfaceCrb:
       return PtpCrbTpmCommand (
@@ -652,16 +626,19 @@ DTpm2SubmitCommand (
                OutputParameterBlock,
                OutputParameterBlockSize
                );
-    // PEI 阶段会使用该接口。
-    // DXE 阶段会将命令提交直接换掉。           
-    // case Tpm2PtpInterfaceTis:
-    //   return Tpm2TisTpmCommand (
-    //            (TIS_PC_REGISTERS_PTR)(UINTN)PcdGet64 (PcdTpmBaseAddress),
-    //            InputParameterBlock,
-    //            InputParameterBlockSize,
-    //            OutputParameterBlock,
-    //            OutputParameterBlockSize
-    //            );
+    // DXE 阶段、PEI 阶段都会使用该接口。
+    // 但是由于 PEI 阶段未加载 VirtIO 驱动，无法直接使用相应的接口。
+    // PEI 阶段还是需要走 CRB 协议接口。
+    case Tpm2PtpInterfaceVirtio:
+      DEBUG((EFI_D_INFO, "Tpm2PtpInterfaceVirtio\n"));
+      
+      return Tpm2VirtioTpmCommand(
+               (PTP_CRB_REGISTERS_PTR)(UINTN)PcdGet64 (PcdTpmBaseAddress),
+               InputParameterBlock,
+               InputParameterBlockSize,
+               OutputParameterBlock,
+               OutputParameterBlockSize
+               );
     default:
       return EFI_NOT_FOUND;
   }

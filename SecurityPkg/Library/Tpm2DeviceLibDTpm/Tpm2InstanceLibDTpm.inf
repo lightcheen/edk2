@@ -30,6 +30,7 @@
 [Sources]
   Tpm2Tis.c
   Tpm2Ptp.c
+  Tpm2Virt.c
   Tpm2InstanceLibDTpm.c
   Tpm2DeviceLibDTpmBase.c
   Tpm2DeviceLibDTpm.h

@@ -114,7 +114,7 @@ Tpm2RegisterTpm2DeviceLib (
   )
 {
   TPM2_DEVICE_INTERFACE  *Tpm2DeviceInterface;
-
+  DEBUG ((EFI_D_INFO, "Tpm2DeviceLibRouterPei-Tpm2RegisterTpm2DeviceLib\n" ));
   if (!CompareGuid (PcdGetPtr (PcdTpmInstanceGuid), &Tpm2Device->ProviderGuid)) {
     DEBUG ((DEBUG_WARN, "WARNING: Tpm2RegisterTpm2DeviceLib - does not support %g registration\n", &Tpm2Device->ProviderGuid));
     return EFI_UNSUPPORTED;

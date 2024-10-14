@@ -10,7 +10,7 @@
 
 #include <Protocol/ComponentName.h>
 #include <Protocol/DriverBinding.h>
-#include <Protocol/Tpm.h>
+#include <Protocol/Tcg2Protocol.h>
 
 #include <IndustryStandard/Virtio.h>
 
