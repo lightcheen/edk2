@@ -629,6 +629,8 @@ DTpm2SubmitCommand (
     // DXE 阶段、PEI 阶段都会使用该接口。
     // 但是由于 PEI 阶段未加载 VirtIO 驱动，无法直接使用相应的接口。
     // PEI 阶段还是需要走 CRB 协议接口。
+
+#ifdef DXE_SPECIFICATION_VERSION 
     case Tpm2PtpInterfaceVirtio:
       DEBUG((EFI_D_INFO, "Tpm2PtpInterfaceVirtio\n"));
       
@@ -639,6 +641,7 @@ DTpm2SubmitCommand (
                OutputParameterBlock,
                OutputParameterBlockSize
                );
+#endif
     default:
       return EFI_NOT_FOUND;
   }

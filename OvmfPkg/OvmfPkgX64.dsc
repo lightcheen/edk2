@@ -1059,3 +1059,5 @@
   # TPM support
   #
 !include OvmfPkg/Include/Dsc/OvmfTpmComponentsDxe.dsc.inc
+
+  OvmfPkg/Library/VirtioLib/VirtioLib.inf

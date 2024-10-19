@@ -2,7 +2,7 @@
 
   This driver produces EFI_TCG2_PROTOCOL instances for virtio-tpm devices.
 
-  The implementation is based on OvmfPkg/VirtioRngDxe/VirtioRng.c
+  The implementation is based on OvmfPkg/VirtioTpmgDxe/VirtioTpm.c
 
 **/
 
@@ -32,7 +32,8 @@ VirtioTpmInit (
   UINT16      QueueSize;
   UINT64      Features;
   UINT64      RingBaseShift;
-  DEBUG ((EFI_D_INFO, "VirtioTpmInit\n" ));
+  EFI_TCG2_PROTOCOL  *mTcg2Protocol;
+  DEBUG((EFI_D_INFO, "VirtioTpmInit\n"));
   //
   // Execute virtio-0.9.5, 2.2.1 Device Initialization Sequence.
   //
@@ -169,6 +170,18 @@ VirtioTpmInit (
   }
 
   Dev->Ready       = TRUE;
+
+  
+  Status = gBS->LocateProtocol (&gEfiTcg2ProtocolGuid, NULL, (VOID **)&mTcg2Protocol);
+  if (EFI_ERROR (Status)) {
+    //
+    // Tcg2 protocol is not installed. So, TPM2 is not present.
+    //
+    DEBUG ((DEBUG_ERROR, "Tpm2SubmitCommand - Tcg2 - %r\n", Status));
+    return EFI_NOT_FOUND;
+  }
+  
+  Dev->Tpm = mTcg2Protocol; // TODO: 如何获取？
 
   return EFI_SUCCESS;
 

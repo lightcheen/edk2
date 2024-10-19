@@ -30,12 +30,16 @@
 [Packages]
   MdePkg/MdePkg.dec
   SecurityPkg/SecurityPkg.dec
+  OvmfPkg/OvmfPkg.dec
 
 [LibraryClasses]
   BaseLib
   BaseMemoryLib
   DebugLib
   UefiBootServicesTableLib
+
+[LibraryClasses.DXE_DRIVER]
+  VirtioLib|OvmfPkg/Library/VirtioLib/VirtioLib.inf
 
 [Protocols]
   gEfiTcg2ProtocolGuid                           ## CONSUMES

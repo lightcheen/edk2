@@ -28,7 +28,7 @@ typedef struct {
   VIRTIO_DEVICE_PROTOCOL    *VirtIo;        // DriverBindingStart   0
   EFI_EVENT                 ExitBoot;       // DriverBindingStart   0
   VRING                     Ring;           // VirtioRingInit       2
-  EFI_TCG2_PROTOCOL         Tpm;            // VirtioTpmInit        1
+  EFI_TCG2_PROTOCOL         *Tpm;           // VirtioTpmInit        1
   VOID                      *RingMap;       // VirtioRingMap        2
   BOOLEAN                   Ready;
 } VIRTIO_TPM_DEV;

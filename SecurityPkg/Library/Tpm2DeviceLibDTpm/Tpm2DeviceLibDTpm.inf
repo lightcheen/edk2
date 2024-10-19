@@ -42,6 +42,7 @@
 [Packages]
   MdePkg/MdePkg.dec
   SecurityPkg/SecurityPkg.dec
+  OvmfPkg/OvmfPkg.dec
 
 [LibraryClasses]
   BaseLib
@@ -50,6 +51,9 @@
   TimerLib
   DebugLib
   PcdLib
+
+[LibraryClasses.DXE_DRIVER]
+  VirtioLib|OvmfPkg/Library/VirtioLib/VirtioLib.inf
 
 [Pcd]
   gEfiSecurityPkgTokenSpaceGuid.PcdTpmBaseAddress            ## CONSUMES
