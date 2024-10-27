@@ -10,14 +10,178 @@
 #include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/UefiLib.h>
 #include <Library/VirtioLib.h>
 #include <Library/PcdLib.h>
 #include <Library/IoLib.h>
+#include <Guid/HobList.h>
+#include <Uefi/UefiSpec.h>
+#include <Pi/PiBootMode.h>
+#include <Pi/PiHob.h>
+#include <Uefi.h>
+#include <Library/HobLib.h>
 
 #include <IndustryStandard/TpmPtp.h>
+#include <IndustryStandard/TpmVirt.h>
 
 #include "VirtioTpm.h"
+
+
+EFI_STATUS
+Tpm2VirtioTpmCommandDXE( // SecurityPkg 需要，但是它位于 OvmfPkg
+  IN     PTP_CRB_REGISTERS_PTR  CrbReg,
+  IN     UINT8                 *BufferIn,
+  IN     UINT32                SizeIn,
+  IN OUT UINT8                 *BufferOut,
+  IN OUT UINT32                *SizeOut
+) {
+  DEBUG ((EFI_D_INFO, "[Tpm2VirtioTpmCommandDXE]\n" ));
+  
+  VIRTIO_TPM_DEV        *Dev;
+  DESC_INDICES          Indices;
+  UINTN                 Index;
+  EFI_STATUS            Status;
+  // volatile UINT8        *Buffer;
+  UINT32                Len;
+  UINT32                TpmOutSize;
+  UINT16                Data16;
+  UINT32                Data32;
+  EFI_PHYSICAL_ADDRESS  DeviceAddress;
+  VOID                  *Mapping;
+  EFI_TCG2_PROTOCOL  *mTcg2Protocol;
+
+  
+  Status = gBS->LocateProtocol(&gEfiTcg2ProtocolGuid, NULL, (VOID**)&mTcg2Protocol);
+  if (EFI_ERROR (Status)) {
+    //
+    // Tcg2 protocol is not installed. So, TPM2 is not present.
+    //
+    DEBUG ((DEBUG_ERROR, "Tpm2VirtioTpmCommand - Tcg2 - %r\n", Status));
+    return EFI_NOT_FOUND;
+  }
+  
+  Dev = VIRTIO_TRUSTED_PLATFORM_MODULE_FROM_TPM (mTcg2Protocol); // 利用结构体成员获取整个结构体
+  if (!Dev->Ready) {
+    DEBUG ((DEBUG_INFO, "%a: not ready\n", __func__));
+    return EFI_DEVICE_ERROR;
+  }
+
+  // 参考：PtpCrbTpmCommand
+  // Step.1 Wait IDLE，已经删除 READY/IDLE 属性。（不需要考虑）
+  // Step.2 将要发送的 TPM 命令的长度描述等信息写入到寄存器空间中。（不需要考虑）
+  // Step.3 Ring 1 到 CrbReg->CrbControlStart 处，触发后端 TPM 命令发射。发射后进行 Poll，待 CrbControlStart 处寄存器设置为 0 时，命令处理完成，出现 Response。
+  //（改 Step.3）
+  TpmOutSize = 0;
+  
+  // Map Buffer's system physical address to device address
+  Status = VirtioMapAllBytesInSharedBuffer (
+             Dev->VirtIo,
+             VirtioOperationBusMasterCommonBuffer,
+             (VOID *)BufferIn,
+             SizeIn,
+             &DeviceAddress,
+             &Mapping
+             );
+  if (EFI_ERROR (Status)) {
+    Status = EFI_DEVICE_ERROR;
+    return Status;
+  }
+
+  // 发送后，再接收。
+  VirtioPrepare (&Dev->Ring, &Indices);
+  VirtioAppendDesc (
+    &Dev->Ring,
+    DeviceAddress,
+    SizeIn,
+    VRING_DESC_F_WRITE, // 先写入！
+    &Indices
+  );
+
+  DEBUG ((DEBUG_INFO, "Tpm2VirtioTpmCommand Send - "));
+  if (VirtioFlush (Dev->VirtIo, 0, &Dev->Ring, &Indices, &Len) !=
+      EFI_SUCCESS)
+  {
+    Status = EFI_DEVICE_ERROR;
+    goto UnmapBuffer;
+  }
+
+  ASSERT (Len == SizeIn);
+  
+  VirtioPrepare (&Dev->Ring, &Indices);
+  VirtioAppendDesc (
+    &Dev->Ring,
+    DeviceAddress,
+    sizeof (TPM2_RESPONSE_HEADER),
+    0,
+    &Indices
+  );
+
+  if (VirtioFlush (Dev->VirtIo, 0, &Dev->Ring, &Indices, &Len) != EFI_SUCCESS) {
+      Status = EFI_DEVICE_ERROR;
+      goto UnmapBuffer;
+  }
+  
+  ASSERT (Len == sizeof(TPM2_RESPONSE_HEADER));
+  
+  DEBUG ((DEBUG_INFO, "Tpm2VirtioTpmCommand ReceiveHeader - "));
+  for (Index = 0; Index < sizeof (TPM2_RESPONSE_HEADER); Index++) {
+    DEBUG ((DEBUG_INFO, "%02x ", BufferOut[Index]));
+  }
+  
+  DEBUG ((DEBUG_INFO, "\n"));
+
+  CopyMem(&Data16, BufferOut, sizeof(UINT16));
+  // TPM2 should not use this RSP_COMMAND
+  if (SwapBytes16 (Data16) == TPM_ST_RSP_COMMAND) {
+    DEBUG ((DEBUG_INFO, "TPM2: TPM_ST_RSP error - %x\n", TPM_ST_RSP_COMMAND));
+    Status = EFI_UNSUPPORTED;
+    goto UnmapBuffer;
+  }
+
+  CopyMem (&Data32, (BufferOut + 2), sizeof (UINT32));
+  TpmOutSize = SwapBytes32 (Data32);
+  if (*SizeOut < TpmOutSize) {
+    //
+    // Command completed, but buffer is not enough
+    //
+    Status = EFI_BUFFER_TOO_SMALL;
+    goto UnmapBuffer;
+  }
+
+  *SizeOut = TpmOutSize;
+
+  VirtioPrepare (&Dev->Ring, &Indices);
+  VirtioAppendDesc (
+    &Dev->Ring,
+    DeviceAddress + sizeof (TPM2_RESPONSE_HEADER),
+    TpmOutSize,
+    0,
+    &Indices
+  );
+
+  if (VirtioFlush (Dev->VirtIo, 0, &Dev->Ring, &Indices, &Len) != EFI_SUCCESS) {
+      Status = EFI_DEVICE_ERROR;
+      goto UnmapBuffer;
+  }
+
+  DEBUG ((DEBUG_INFO, "PtpCrbTpmCommand Receive - "));
+  for (Index = 0; Index < TpmOutSize; Index++) {
+    DEBUG ((DEBUG_INFO, "%02x ", BufferOut[Index]));
+  }
+
+  DEBUG ((DEBUG_INFO, "\n"));
+
+  Status = EFI_SUCCESS;
+
+UnmapBuffer:
+  
+  if (EFI_ERROR (Status)) {
+    Dev->VirtIo->UnmapSharedBuffer (Dev->VirtIo, Mapping);
+  }
+
+  return Status;
+}
 
 
 STATIC
@@ -29,10 +193,14 @@ VirtioTpmInit (
 {
   UINT8       NextDevStat;
   EFI_STATUS  Status;
-  UINT16      QueueSize;
   UINT64      Features;
+  UINT16      QueueSize;
   UINT64      RingBaseShift;
-  EFI_TCG2_PROTOCOL  *mTcg2Protocol;
+  EFI_TCG2_PROTOCOL* mTcg2Protocol;
+  EFI_GUID gMyHobGuid = { 0xaabbccdd, 0x1234, 0x5678, { 0x9a, 0xbc, 0xde, 0xf0, 0x12, 0x34, 0x56, 0x78 } };
+  EFI_PHYSICAL_ADDRESS *FunctionPointer;
+  EFI_HOB_GUID_TYPE *GuidHob;
+
   DEBUG((EFI_D_INFO, "VirtioTpmInit\n"));
   //
   // Execute virtio-0.9.5, 2.2.1 Device Initialization Sequence.
@@ -83,9 +251,9 @@ VirtioTpmInit (
       goto Failed;
     }
   }
-
+  
   //
-  // step 4b -- allocate request virtqueue, just use #0
+  // step 4b -- allocate request/response virtqueue
   //
   Status = Dev->VirtIo->SetQueueSel (Dev->VirtIo, 0);
   if (EFI_ERROR (Status)) {
@@ -96,16 +264,8 @@ VirtioTpmInit (
   if (EFI_ERROR (Status)) {
     goto Failed;
   }
-
-  //
-  // VirtioRngGetRNG() uses one descriptor
-  //
-  if (QueueSize < 1) {
-    Status = EFI_UNSUPPORTED;
-    goto Failed;
-  }
-
-  Status = VirtioRingInit (Dev->VirtIo, QueueSize, &Dev->Ring);
+  
+  Status = VirtioRingInit(Dev->VirtIo, QueueSize, &Dev->Ring);
   if (EFI_ERROR (Status)) {
     goto Failed;
   }
@@ -123,10 +283,6 @@ VirtioTpmInit (
     goto ReleaseQueue;
   }
 
-  //
-  // Additional steps for MMIO: align the queue appropriately, and set the
-  // size. If anything fails from here on, we must unmap the ring resources.
-  //
   Status = Dev->VirtIo->SetQueueNum (Dev->VirtIo, QueueSize);
   if (EFI_ERROR (Status)) {
     goto UnmapQueue;
@@ -152,10 +308,10 @@ VirtioTpmInit (
   //
   // step 5 -- Report understood features and guest-tuneables.
   //
-  if (Dev->VirtIo->Revision < VIRTIO_SPEC_REVISION (1, 0, 0)) {
+  if (Dev->VirtIo->Revision < VIRTIO_SPEC_REVISION(1, 0, 0)) {
     Features &= ~(UINT64)(VIRTIO_F_VERSION_1 | VIRTIO_F_IOMMU_PLATFORM);
-    Status    = Dev->VirtIo->SetGuestFeatures (Dev->VirtIo, Features);
-    if (EFI_ERROR (Status)) {
+    Status = Dev->VirtIo->SetGuestFeatures(Dev->VirtIo, Features);
+    if (EFI_ERROR(Status)) {
       goto UnmapQueue;
     }
   }
@@ -164,32 +320,38 @@ VirtioTpmInit (
   // step 6 -- initialization complete
   //
   NextDevStat |= VSTAT_DRIVER_OK;
-  Status       = Dev->VirtIo->SetDeviceStatus (Dev->VirtIo, NextDevStat);
-  if (EFI_ERROR (Status)) {
+  Status = Dev->VirtIo->SetDeviceStatus(Dev->VirtIo, NextDevStat);
+  if (EFI_ERROR(Status)) {
     goto UnmapQueue;
   }
 
-  Dev->Ready       = TRUE;
+  Dev->Ready = TRUE;
 
-  
-  Status = gBS->LocateProtocol (&gEfiTcg2ProtocolGuid, NULL, (VOID **)&mTcg2Protocol);
-  if (EFI_ERROR (Status)) {
+
+  Status = gBS->LocateProtocol(&gEfiTcg2ProtocolGuid, NULL, (VOID**)&mTcg2Protocol);
+  if (EFI_ERROR(Status)) {
     //
     // Tcg2 protocol is not installed. So, TPM2 is not present.
     //
-    DEBUG ((DEBUG_ERROR, "Tpm2SubmitCommand - Tcg2 - %r\n", Status));
+    DEBUG((DEBUG_ERROR, "Tpm2SubmitCommand - Tcg2 - %r\n", Status));
     return EFI_NOT_FOUND;
   }
-  
-  Dev->Tpm = mTcg2Protocol; // TODO: 如何获取？
 
-  return EFI_SUCCESS;
+  Dev->Tpm = mTcg2Protocol;
+
+  GuidHob = GetFirstGuidHob(&gMyHobGuid);
+  if (GuidHob != NULL) {
+    DEBUG((EFI_D_INFO, "[VirtioTpmInit] Hob change!\n"));
+    FunctionPointer = (EFI_PHYSICAL_ADDRESS*)GET_GUID_HOB_DATA(GuidHob);
+    *FunctionPointer = (EFI_PHYSICAL_ADDRESS)(UINTN)Tpm2VirtioTpmCommandDXE; // TODO: 未完成。且 OVMF 启动会陷入奇怪的错误中，需要回溯一下确认一下原因！
+  }
+
 
 UnmapQueue:
-  Dev->VirtIo->UnmapSharedBuffer (Dev->VirtIo, Dev->RingMap);
+  Dev->VirtIo->UnmapSharedBuffer(Dev->VirtIo, Dev->RingMap);
 
 ReleaseQueue:
-  VirtioRingUninit (Dev->VirtIo, &Dev->Ring);
+  VirtioRingUninit(Dev->VirtIo, &Dev->Ring);
 
 Failed:
   //
@@ -197,11 +359,11 @@ Failed:
   // Status. VirtIo access failure here should not mask the original error.
   //
   NextDevStat |= VSTAT_FAILED;
-  Dev->VirtIo->SetDeviceStatus (Dev->VirtIo, NextDevStat);
+  Dev->VirtIo->SetDeviceStatus(Dev->VirtIo, NextDevStat);
 
   return Status; // reached only via Failed above
 }
-
+  
 STATIC
 VOID
 EFIAPI

@@ -27,7 +27,7 @@ typedef struct {
   UINT32                    Signature;      // DriverBindingStart   0
   VIRTIO_DEVICE_PROTOCOL    *VirtIo;        // DriverBindingStart   0
   EFI_EVENT                 ExitBoot;       // DriverBindingStart   0
-  VRING                     Ring;           // VirtioRingInit       2
+  VRING                     Ring;        // VirtioRingInit       2
   EFI_TCG2_PROTOCOL         *Tpm;           // VirtioTpmInit        1
   VOID                      *RingMap;       // VirtioRingMap        2
   BOOLEAN                   Ready;

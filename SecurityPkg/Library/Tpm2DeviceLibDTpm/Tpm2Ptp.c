@@ -19,6 +19,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 #include <IndustryStandard/TpmPtp.h>
 #include <IndustryStandard/TpmTis.h>
+#include <IndustryStandard/TpmVirt.h>
 
 #include "Tpm2DeviceLibDTpm.h"
 
@@ -410,13 +411,17 @@ Tpm2TisTpmCommand (
   );
 
 EFI_STATUS
-Tpm2VirtioTpmCommand(
-  IN     PTP_CRB_REGISTERS_PTR  TisReg,
-  IN     UINT8                 *BufferIn,
+Tpm2VirtioTpmCommand( // SecurityPkg 需要，但是它位于 OvmfPkg
+  IN     PTP_CRB_REGISTERS_PTR  CrbReg,
+  IN     UINT8* BufferIn,
   IN     UINT32                SizeIn,
-  IN OUT UINT8                 *BufferOut,
-  IN OUT UINT32                *SizeOut
-);
+  IN OUT UINT8* BufferOut,
+  IN OUT UINT32* SizeOut
+) {
+  return EFI_SUCCESS;
+}
+
+Tpm2VirtioTpmCommandFunc Tpm2VirtioTpmCommandPtr = Tpm2VirtioTpmCommand;
 
 /**
   Get the control of TPM chip by sending requestUse command TIS_PC_ACC_RQUUSE
@@ -629,19 +634,17 @@ DTpm2SubmitCommand (
     // DXE 阶段、PEI 阶段都会使用该接口。
     // 但是由于 PEI 阶段未加载 VirtIO 驱动，无法直接使用相应的接口。
     // PEI 阶段还是需要走 CRB 协议接口。
-
-#ifdef DXE_SPECIFICATION_VERSION 
     case Tpm2PtpInterfaceVirtio:
+// #ifdef DXE_PHASE 
       DEBUG((EFI_D_INFO, "Tpm2PtpInterfaceVirtio\n"));
-      
-      return Tpm2VirtioTpmCommand(
+      return Tpm2VirtioTpmCommandPtr(
                (PTP_CRB_REGISTERS_PTR)(UINTN)PcdGet64 (PcdTpmBaseAddress),
                InputParameterBlock,
                InputParameterBlockSize,
                OutputParameterBlock,
                OutputParameterBlockSize
                );
-#endif
+// #endif
     default:
       return EFI_NOT_FOUND;
   }

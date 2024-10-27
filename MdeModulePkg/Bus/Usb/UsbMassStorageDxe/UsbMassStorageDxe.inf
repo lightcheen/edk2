@@ -65,7 +65,7 @@
   BaseMemoryLib
   DebugLib
   DevicePathLib
-
+  HobLib
 
 [Protocols]
   gEfiUsbIoProtocolGuid                         ## TO_START

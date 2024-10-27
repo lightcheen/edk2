@@ -27,6 +27,7 @@
   DebugLib
   UefiLib
   TpmPlatformHierarchyLib
+  HobLib
 
 [Packages]
   MdePkg/MdePkg.dec

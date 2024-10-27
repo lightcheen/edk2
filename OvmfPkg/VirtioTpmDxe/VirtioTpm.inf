@@ -29,9 +29,11 @@
   DebugLib
   MemoryAllocationLib
   UefiBootServicesTableLib
+  UefiRuntimeServicesTableLib
   UefiDriverEntryPoint
   UefiLib
   VirtioLib
+  HobLib
 
 [Protocols]
   gEfiTcg2ProtocolGuid             ## BY_START

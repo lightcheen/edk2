@@ -19,6 +19,10 @@
 #include <Library/Tpm2DeviceLib.h>
 #include <Ppi/TpmInitialized.h>
 
+#include <Library/HobLib.h>
+
+#include <IndustryStandard/TpmVirt.h>
+
 #include "Tpm12Support.h"
 
 STATIC CONST EFI_PEI_PPI_DESCRIPTOR  mTpmSelectedPpi = {
@@ -92,5 +96,21 @@ Tcg2ConfigPeimEntryPoint (
   Status = PeiServicesInstallPpi (&mTpmSelectedPpi);
   ASSERT_EFI_ERROR (Status);
 
+  // Hob
+  // 创建一个 HOB 并存储函数指针的地址
+
+  EFI_GUID gMyHobGuid = { 0xaabbccdd, 0x1234, 0x5678, { 0x9a, 0xbc, 0xde, 0xf0, 0x12, 0x34, 0x56, 0x78 } };
+
+  EFI_PHYSICAL_ADDRESS FunctionPointer = (EFI_PHYSICAL_ADDRESS)(UINTN)Tpm2VirtioTpmCommandPtr;
+  EFI_HOB_GUID_TYPE* Hob = BuildGuidDataHob(
+      &gMyHobGuid,    // 自定义的 HOB GUID
+      &FunctionPointer,            // 函数指针地址
+      sizeof(EFI_PHYSICAL_ADDRESS)  // 存储的大小
+  );
+
+  // 检查 HOB 是否成功创建
+
+  DEBUG ((DEBUG_INFO, "[Tcg2ConfigPeimEntryPoint] Hob Created Succ?\n", Hob != NULL));
+  
   return Status;
 }
